@@ -10,6 +10,7 @@ import os
 
 
 app = Starlette(debug=True)
+logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s - %(message)s')
 
 async def hook(scope, receive, send):
     assert scope['type'] == 'http'
@@ -17,16 +18,15 @@ async def hook(scope, receive, send):
     sig = hmac.new(key, digestmod='sha1')
     body = await request.body()
     sig.update(body)
-    assert hmac.compare_digest(
+    valid = hmac.compare_digest(
         'sha1={}'.format(sig.hexdigest()),
         request.headers['X-Hub-Signature']
     )
-    body_json = await request.json()
     task = BackgroundTask(
         rebuild_deploy,
-        body=body_json
+        body=await request.json()
     )
-    response = PlainTextResponse('success', background=task)
+    response = PlainTextResponse(str(valid), background=task if valid else None)
     await response(scope, receive, send)
 
 
