@@ -1,2 +1,3 @@
+wheel
 starlette
 uvicorn

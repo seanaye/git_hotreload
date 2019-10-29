@@ -3,7 +3,6 @@ from starlette.applications import Starlette
 from starlette.responses import PlainTextResponse
 from starlette.requests import Request
 from starlette.background import BackgroundTask
-from schema import schema
 from secretkey import key
 import logging
 import hmac
