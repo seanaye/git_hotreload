@@ -18,7 +18,7 @@ async def hook(scope, receive, send):
     sig = hmac.new(key, digestmod='sha1')
     body = await request.body()
     sig.update(body)
-    valid = hmac.compare_digest(
+    valid = 'X-Hub-Signature' in request.headers and hmac.compare_digest(
         'sha1={}'.format(sig.hexdigest()),
         request.headers['X-Hub-Signature']
     )
