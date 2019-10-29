@@ -22,11 +22,13 @@ async def hook(scope, receive, send):
         'sha1={}'.format(sig.hexdigest()),
         request.headers['X-Hub-Signature']
     )
-    task = BackgroundTask(
-        rebuild_deploy,
-        body=await request.json()
+    response = PlainTextResponse(
+        str(valid),
+        background=BackgroundTask(
+            rebuild_deploy,
+            body=await request.json()
+        ) if valid else None
     )
-    response = PlainTextResponse(str(valid), background=task if valid else None)
     await response(scope, receive, send)
 
 
