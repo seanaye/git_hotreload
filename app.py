@@ -7,10 +7,19 @@ from secretkey import key
 import logging
 import hmac
 import os
+import yaml
 
 
 app = Starlette(debug=True)
 logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s - %(message)s')
+
+@app.on_event('startup')
+def startup():
+    logging.info('application startup')
+
+@app.on_event('shutdown')
+def shutdown():
+    logging.critical('application shutdown')
 
 async def hook(scope, receive, send):
     assert scope['type'] == 'http'
@@ -35,6 +44,15 @@ async def hook(scope, receive, send):
 def cd(path):
     os.chdir(os.path.expanduser(path))
 
+def parse_compose(fr, build_dir):
+    if not isinstance(fr, dict):
+        return False
+    if 'build' in fr and build_dir in fr['build']:
+        return True
+    for key in fr:
+        if parse_compose(fr[key], build_dir):
+            return True
+    return False
 
 def rebuild_deploy(body):
     project = body['repository']['name']
@@ -54,7 +72,14 @@ def rebuild_deploy(body):
         os.system('git pull')
     if os.path.isfile(os.path.expanduser('~/docker-compose.yml')):
         cd('~')
-        os.system('docker-compose up -d --build')
-
+        with open('docker-compose.yml', 'r') as stream:
+            file = {}
+            try:
+                file = yaml.safe_load(stream)
+                if parse_compose(file, project):
+                    os.system('docker-compose up -d --build')
+            except yaml.YAMLError as e:
+                logging.critical(e)
+                logging.critical('could not read docker-compose.yml')
 
 app.mount('/hook', hook)

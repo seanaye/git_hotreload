@@ -1,3 +1,5 @@
 wheel
 starlette
 uvicorn
+PyYaml
+gunicorn
