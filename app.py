@@ -68,16 +68,20 @@ def rebuild_deploy(body):
     code = os.system(clone_string)
     logging.critical(code)
     if code:
+        logging.critical('issuing git pull')
         cd(project)
         os.system('git pull')
     if os.path.isfile(os.path.expanduser('~/docker-compose.yml')):
+        logging.critical('attempting to rebuild image')
         cd('~')
         with open('docker-compose.yml', 'r') as stream:
-            file = {}
             try:
                 file = yaml.safe_load(stream)
                 if parse_compose(file, project):
+                    logging.critical('issuing docker rebuild')
                     os.system('docker-compose up -d --build')
+                else:
+                    logging.critical('no matching image found in docker-compose.yml')
             except yaml.YAMLError as e:
                 logging.critical(e)
                 logging.critical('could not read docker-compose.yml')
