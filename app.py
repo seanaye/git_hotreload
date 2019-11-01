@@ -70,7 +70,7 @@ def rebuild_deploy(body):
     if code:
         logging.critical('issuing git pull')
         cd(project)
-        os.system('git pull')
+        os.system('git lfs pull')
     if os.path.isfile(os.path.expanduser('~/docker-compose.yml')):
         logging.critical('attempting to rebuild image')
         cd('~')
