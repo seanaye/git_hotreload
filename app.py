@@ -9,17 +9,25 @@ import hmac
 import os
 import yaml
 
+logging.basicConfig(
+    level=logging.INFO,
+    filemode='w',
+    format='%(asctime)s - %(message)s'
+)
+logger = logging.getLogger()
+logger.addHandler(logging.FileHandler('output.log', 'a'))
+print = logger.info
+
 
 app = Starlette(debug=True)
-logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s - %(message)s')
 
 @app.on_event('startup')
 def startup():
-    logging.info('application startup')
+    logger.info('application startup')
 
 @app.on_event('shutdown')
 def shutdown():
-    logging.critical('application shutdown')
+    logger.critical('application shutdown')
 
 async def hook(scope, receive, send):
     assert scope['type'] == 'http'
@@ -64,26 +72,27 @@ def rebuild_deploy(body):
         pass
     cd('~/projects')
     clone_string = 'git clone {}'.format(clone)
-    logging.critical(clone_string)
+    logger.critical(clone_string)
     code = os.system(clone_string)
-    logging.critical(code)
+    logger.critical(code)
     if code:
-        logging.critical('issuing git pull')
+        logger.critical('issuing git pull')
         cd(project)
+        os.system('git pull')
         os.system('git lfs pull')
     if os.path.isfile(os.path.expanduser('~/docker-compose.yml')):
-        logging.critical('attempting to rebuild image')
+        logger.critical('attempting to rebuild image')
         cd('~')
         with open('docker-compose.yml', 'r') as stream:
             try:
                 file = yaml.safe_load(stream)
                 if parse_compose(file, project):
-                    logging.critical('issuing docker rebuild')
+                    logger.critical('issuing docker rebuild')
                     os.system('docker-compose up -d --build')
                 else:
-                    logging.critical('no matching image found in docker-compose.yml')
+                    logger.critical('no matching image found in docker-compose.yml')
             except yaml.YAMLError as e:
-                logging.critical(e)
-                logging.critical('could not read docker-compose.yml')
+                logger.critical(e)
+                logger.critical('could not read docker-compose.yml')
 
 app.mount('/hook', hook)
