@@ -8,6 +8,7 @@ import logging
 import hmac
 import os
 import yaml
+import sys
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 logger.addHandler(logging.FileHandler('output.log', 'a'))
 print = logger.info
-
+sys.stdout = logger.info
 
 app = Starlette(debug=True)
 
