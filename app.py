@@ -11,11 +11,9 @@ import os
 import yaml
 import sys
 
+logging.basicConfig(format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
-logger.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s'
-)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.FileHandler('output.log', 'a'))
 
 
