@@ -6,19 +6,18 @@ from starlette.background import BackgroundTask
 from secretkey import key
 import logging
 import hmac
+import subprocess
 import os
 import yaml
 import sys
 
-logging.basicConfig(
+logger = logging.getLogger(__name__)
+logger.basicConfig(
     level=logging.INFO,
-    filemode='w',
     format='%(asctime)s - %(message)s'
 )
-logger = logging.getLogger()
 logger.addHandler(logging.FileHandler('output.log', 'a'))
-print = logger.info
-sys.stdout = logger.info
+
 
 app = Starlette(debug=True)
 
@@ -53,6 +52,14 @@ async def hook(scope, receive, send):
 def cd(path):
     os.chdir(os.path.expanduser(path))
 
+def run_cmd(args):
+    return subprocess.run(
+        args,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT
+    )
+
 def parse_compose(fr, build_dir):
     if not isinstance(fr, dict):
         return False
@@ -72,15 +79,14 @@ def rebuild_deploy(body):
         logging.critical('projects folder already exists')
         pass
     cd('~/projects')
-    clone_string = 'git clone {}'.format(clone)
-    logger.critical(clone_string)
-    code = os.system(clone_string)
-    logger.critical(code)
-    if code:
-        logger.critical('issuing git pull')
+    clone_res = run_cmd(['git', 'clone', clone])
+    logger.info(clone_res.stdout)
+    if clone_res.returncode:
+        logger.critical('directory already exists issuing git pull')
         cd(project)
-        os.system('git pull')
-        os.system('git lfs pull')
+        logger.info(run_cmd(['git', 'reset', '--hard']).stdout)
+        logger.info(run_cmd(['git', 'pull']).stdout)
+        logger.info(run_cmd(['git', 'lfs', 'pull']).stdout)
     if os.path.isfile(os.path.expanduser('~/docker-compose.yml')):
         logger.critical('attempting to rebuild image')
         cd('~')
@@ -89,7 +95,7 @@ def rebuild_deploy(body):
                 file = yaml.safe_load(stream)
                 if parse_compose(file, project):
                     logger.critical('issuing docker rebuild')
-                    os.system('docker-compose up -d --build')
+                    logger.info(run_cmd(['docker-compose', 'up', '-d', '--build']).stdout)
                 else:
                     logger.critical('no matching image found in docker-compose.yml')
             except yaml.YAMLError as e:
