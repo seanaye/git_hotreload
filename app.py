@@ -73,10 +73,9 @@ def rebuild_deploy(body):
         logging.critical('projects folder already exists')
         pass
     cd('~/projects')
-    try:
-        run_cmd(['git', 'clone', clone])
-    except subprocess.CalledProcessError as err:
-        logging.info(err.output)
+    if not os.path.exists(project):
+        logging.critical(run_cmd(['git', 'clone', clone]))
+    else:
         cd(project)
         logging.info(run_cmd(['git', 'reset', '--hard']).stdout)
         logging.info(run_cmd(['git', 'pull']).stdout)
