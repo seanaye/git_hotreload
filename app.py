@@ -89,7 +89,6 @@ def rebuild_deploy(body):
                 if parse_compose(file, project):
                     logging.critical('issuing docker rebuild')
                     logging.info(run_cmd(['docker-compose', 'up', '-d', '--build']).stdout)
-                    logging.info(run_cmd(['docker-compose', 'up', '-d']).stdout)
                 else:
                     logging.critical('no matching image found in docker-compose.yml')
             except yaml.YAMLError as e:
